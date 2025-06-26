@@ -19,14 +19,14 @@ func (app *application) createJobHandler(w http.ResponseWriter, r *http.Request)
 		app.badRequestResponse(w, r, err)
 		return
 	}
-	v := validator.New()
-	if job.ValidateCreateJob(v, &input); !v.Valid() {
-		app.failedValidationResponse(w, r, v.Errors)
-		return
-	}
 
-	job, err := app.dispatcher.Enqueue(r.Context(), &input)
+	job, err := app.jobService.CreateJob(r.Context(), &input)
 	if err != nil {
+		var validationError *validator.ValidationError
+		if errors.As(err, &validationError) {
+			app.failedValidationResponse(w, r, validationError.Errors)
+			return
+		}
 		app.serverErrorResponse(w, r, err)
 		return
 	}

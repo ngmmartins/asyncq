@@ -32,7 +32,7 @@ func main() {
 
 	redis := bootstrap.NewRedisClient(logger, cfg.redis.url)
 	store := postgres.New(&cfg.db, logger)
-	dispatcher := queue.NewDispatcher(logger, redis, store)
+	dispatcher := queue.NewDispatcher(logger, redis)
 
 	w := worker.New(store, dispatcher, logger)
 

@@ -10,6 +10,7 @@ import (
 
 	"github.com/ngmmartins/asyncq/internal/bootstrap"
 	"github.com/ngmmartins/asyncq/internal/queue"
+	"github.com/ngmmartins/asyncq/internal/service"
 	"github.com/ngmmartins/asyncq/internal/store"
 	"github.com/ngmmartins/asyncq/internal/store/postgres"
 	"github.com/ngmmartins/asyncq/internal/util"
@@ -33,6 +34,7 @@ type application struct {
 	logger     *slog.Logger
 	dispatcher *queue.Dispatcher
 	store      store.Store
+	jobService *service.JobService
 	wg         sync.WaitGroup
 }
 
@@ -44,13 +46,15 @@ func main() {
 
 	redis := bootstrap.NewRedisClient(logger, cfg.redis.url)
 	store := postgres.New(&cfg.db, logger)
-	dispatcher := queue.NewDispatcher(logger, redis, store)
+	dispatcher := queue.NewDispatcher(logger, redis)
+	jobService := service.NewJobService(logger, dispatcher, store)
 
 	app := &application{
 		config:     cfg,
 		logger:     logger,
 		dispatcher: dispatcher,
 		store:      store,
+		jobService: jobService,
 	}
 
 	err := app.serve()

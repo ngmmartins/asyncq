@@ -1,5 +1,10 @@
 package validator
 
+import (
+	"fmt"
+	"strings"
+)
+
 type Validator struct {
 	Errors map[string]string
 }
@@ -31,4 +36,17 @@ func (v *Validator) Check(ok bool, key, message string) {
 // if ok is false adds the error with a default message
 func (v *Validator) CheckRequired(ok bool, key string) {
 	v.Check(ok, key, "required field")
+}
+
+type ValidationError struct {
+	Errors map[string]string
+}
+
+func (v *ValidationError) Error() string {
+	var sb strings.Builder
+	sb.WriteString("validation failed:")
+	for field, msg := range v.Errors {
+		sb.WriteString(fmt.Sprintf(" %s: %s;", field, msg))
+	}
+	return sb.String()
 }
