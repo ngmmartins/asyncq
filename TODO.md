@@ -1,0 +1,16 @@
+- send_mail
+    - suppport multiple "To"s on send_email
+    - support CC and BCC on send_email
+    - Evaluate sending attachments on send_email
+- Implement retry logic and backoff
+- Authentication
+- Check errors overall - if they are correctly logged and handled/returned in the right places
+- Add logic to retry failed job
+- check redis docs on operations used and document stuff like ZREM nonexisting members are ignored and operation doesn't fail
+- check /TODOs
+- Introduce a service layer to wrap dispatcher and store and coordinate suff?
+- Check database connections configurations on each application (api, worker, ...)
+- Create doc explaining how to setup local database
+- check context timeouts used in database calls. is it reasonable? how it affects eventual timeouts that come from above context?
+- Consider returning a tx in some database methods to rollback in case of errors down the line. Like updating a job on the database and then
+removing from redis queueu that fails.
