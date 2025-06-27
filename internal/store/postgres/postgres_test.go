@@ -32,6 +32,7 @@ func TestMain(m *testing.M) {
 	}
 
 	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
+		Name:       "asyncq-postgres-tests",
 		Repository: "postgres",
 		Tag:        "17",
 		Env: []string{

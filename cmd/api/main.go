@@ -32,7 +32,7 @@ type config struct {
 type application struct {
 	config     config
 	logger     *slog.Logger
-	dispatcher *queue.Dispatcher
+	queue      queue.Queue
 	store      store.Store
 	jobService *service.JobService
 	wg         sync.WaitGroup
@@ -46,13 +46,13 @@ func main() {
 
 	redis := bootstrap.NewRedisClient(logger, cfg.redis.url)
 	store := postgres.New(&cfg.db, logger)
-	dispatcher := queue.NewDispatcher(logger, redis)
-	jobService := service.NewJobService(logger, dispatcher, store)
+	queue := queue.NewRedisQueue(logger, redis)
+	jobService := service.NewJobService(logger, queue, store)
 
 	app := &application{
 		config:     cfg,
 		logger:     logger,
-		dispatcher: dispatcher,
+		queue:      queue,
 		store:      store,
 		jobService: jobService,
 	}

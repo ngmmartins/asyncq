@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
@@ -40,7 +39,7 @@ func (app *application) createJobHandler(w http.ResponseWriter, r *http.Request)
 func (app *application) getJobHandler(w http.ResponseWriter, r *http.Request) {
 	id := httprouter.ParamsFromContext(r.Context()).ByName("id")
 
-	j, err := app.store.Job().Get(r.Context(), id)
+	j, err := app.jobService.GetJob(r.Context(), id)
 	if err != nil {
 		switch {
 		case errors.Is(err, store.ErrRecordNotFound):
@@ -60,7 +59,7 @@ func (app *application) getJobHandler(w http.ResponseWriter, r *http.Request) {
 func (app *application) getJobStatusHandler(w http.ResponseWriter, r *http.Request) {
 	id := httprouter.ParamsFromContext(r.Context()).ByName("id")
 
-	j, err := app.store.Job().Get(r.Context(), id)
+	j, err := app.jobService.GetJob(r.Context(), id)
 	if err != nil {
 		switch {
 		case errors.Is(err, store.ErrRecordNotFound):
@@ -80,39 +79,25 @@ func (app *application) getJobStatusHandler(w http.ResponseWriter, r *http.Reque
 func (app *application) cancelJobHandler(w http.ResponseWriter, r *http.Request) {
 	id := httprouter.ParamsFromContext(r.Context()).ByName("id")
 
-	j, err := app.store.Job().Get(r.Context(), id)
+	err := app.jobService.UpdateJobStatus(r.Context(), id, job.StatusCancelled)
 	if err != nil {
 		switch {
 		case errors.Is(err, store.ErrRecordNotFound):
 			app.notFoundResponse(w, r)
+			//TODO invalid status transition
 		default:
 			app.serverErrorResponse(w, r, err)
 		}
 		return
 	}
 
-	v := validator.New()
-	v.Check(j.Status == job.StatusQueued, "status", fmt.Sprintf("Unable to transition from %s to %s", j.Status, job.StatusCancelled))
-	if !v.Valid() {
-		app.failedValidationResponse(w, r, v.Errors)
-		return
-	}
-
-	j.Status = job.StatusCancelled
-
-	err = app.dispatcher.Remove(r.Context(), id)
+	err = app.queue.Remove(r.Context(), id)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
 
-	err = app.store.Job().Update(r.Context(), j)
-	if err != nil {
-		app.serverErrorResponse(w, r, err)
-		return
-	}
-
-	err = app.writeJSON(w, http.StatusOK, envelope{"job": j}, nil)
+	err = app.writeJSON(w, http.StatusOK, nil, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}

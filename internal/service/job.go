@@ -15,13 +15,13 @@ import (
 )
 
 type JobService struct {
-	logger     *slog.Logger
-	dispatcher *queue.Dispatcher
-	store      store.Store
+	logger *slog.Logger
+	queue  queue.Queue
+	store  store.Store
 }
 
-func NewJobService(logger *slog.Logger, dispatcher *queue.Dispatcher, store store.Store) *JobService {
-	return &JobService{logger: logger, dispatcher: dispatcher, store: store}
+func NewJobService(logger *slog.Logger, queue queue.Queue, store store.Store) *JobService {
+	return &JobService{logger: logger, queue: queue, store: store}
 }
 
 func (js *JobService) CreateJob(ctx context.Context, request *job.CreateRequest) (*job.Job, error) {
@@ -53,13 +53,36 @@ func (js *JobService) CreateJob(ctx context.Context, request *job.CreateRequest)
 		return nil, err
 	}
 
-	err = js.dispatcher.Enqueue(ctx, job.ID, job.RunAt)
+	err = js.queue.Enqueue(ctx, job.ID, job.RunAt)
 	if err != nil {
 		js.logger.Error("failed to enqueue job", "jobID", job.ID)
 		return nil, err
 	}
 
 	return &job, nil
+}
+
+func (js *JobService) GetJob(ctx context.Context, jobId string) (*job.Job, error) {
+	return js.store.Job().Get(ctx, jobId)
+}
+
+func (js *JobService) UpdateJobStatus(ctx context.Context, jobId string, newStatus job.Status) error {
+	j, err := js.store.Job().Get(ctx, jobId)
+	if err != nil {
+		return err
+	}
+
+	if !job.IsValidStatusTransition(j.Status, newStatus) {
+		return &job.InvalidStatusTransitionError{
+			From: j.Status,
+			To:   newStatus,
+		}
+	}
+
+	j.Status = newStatus
+	err = js.store.Job().Update(ctx, j)
+
+	return err
 }
 
 func (js *JobService) validateCreateJob(v *validator.Validator, request *job.CreateRequest) {

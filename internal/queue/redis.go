@@ -19,26 +19,26 @@ end
 return jobs
 `)
 
-type Dispatcher struct {
+type RedisQueue struct {
 	Redis  *redis.Client
 	logger *slog.Logger
 }
 
-func NewDispatcher(logger *slog.Logger, redis *redis.Client) *Dispatcher {
-	return &Dispatcher{
+func NewRedisQueue(logger *slog.Logger, redis *redis.Client) *RedisQueue {
+	return &RedisQueue{
 		Redis:  redis,
 		logger: logger,
 	}
 }
 
-func (d *Dispatcher) Enqueue(ctx context.Context, jobId string, runAt time.Time) error {
+func (d *RedisQueue) Enqueue(ctx context.Context, jobId string, runAt time.Time) error {
 	return d.Redis.ZAdd(ctx, defaultQueue, redis.Z{
 		Score:  float64(runAt.Unix()),
 		Member: jobId,
 	}).Err()
 }
 
-func (d *Dispatcher) Dequeue(ctx context.Context, timeThreshold time.Time) ([]string, error) {
+func (d *RedisQueue) Dequeue(ctx context.Context, timeThreshold time.Time) ([]string, error) {
 	score := float64(timeThreshold.Unix())
 
 	ids, err := d.atomicDequeue(ctx, score)
@@ -54,11 +54,11 @@ func (d *Dispatcher) Dequeue(ctx context.Context, timeThreshold time.Time) ([]st
 	return ids, nil
 }
 
-func (d *Dispatcher) Remove(ctx context.Context, id string) error {
-	return d.Redis.ZRem(ctx, defaultQueue, []string{id}).Err()
+func (d *RedisQueue) Remove(ctx context.Context, jobId string) error {
+	return d.Redis.ZRem(ctx, defaultQueue, []string{jobId}).Err()
 }
 
-func (d *Dispatcher) atomicDequeue(ctx context.Context, maxScore float64) ([]string, error) {
+func (d *RedisQueue) atomicDequeue(ctx context.Context, maxScore float64) ([]string, error) {
 	result, err := atomicDequeueScript.Run(ctx, d.Redis, []string{defaultQueue}, 0, maxScore).Result()
 	if err != nil {
 		return nil, err

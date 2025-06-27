@@ -9,6 +9,7 @@ import (
 
 	"github.com/ngmmartins/asyncq/internal/bootstrap"
 	"github.com/ngmmartins/asyncq/internal/queue"
+	"github.com/ngmmartins/asyncq/internal/service"
 	"github.com/ngmmartins/asyncq/internal/store/postgres"
 	"github.com/ngmmartins/asyncq/internal/util"
 	"github.com/ngmmartins/asyncq/internal/worker"
@@ -32,9 +33,10 @@ func main() {
 
 	redis := bootstrap.NewRedisClient(logger, cfg.redis.url)
 	store := postgres.New(&cfg.db, logger)
-	dispatcher := queue.NewDispatcher(logger, redis)
+	queue := queue.NewRedisQueue(logger, redis)
+	jobService := service.NewJobService(logger, queue, store)
 
-	w := worker.New(store, dispatcher, logger)
+	w := worker.New(store, queue, logger, jobService)
 
 	logger.Info("worker started", "env", cfg.env)
 	w.Run(context.Background(), cfg.tickInterval)
