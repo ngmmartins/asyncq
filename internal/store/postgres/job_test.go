@@ -21,11 +21,13 @@ func TestSave(t *testing.T) {
 		t.Parallel()
 
 		now := time.Now()
+		runAt := now.Add(1 * time.Hour)
+
 		j := &job.Job{
 			ID:        uuid.NewString(),
 			Task:      task.SendEmailTask,
 			Payload:   json.RawMessage(sendEmailPayload),
-			RunAt:     now.Add(1 * time.Hour),
+			RunAt:     &runAt,
 			Status:    job.StatusQueued,
 			CreatedAt: now,
 		}
@@ -41,12 +43,13 @@ func TestSave(t *testing.T) {
 
 		id := uuid.NewString()
 		now := time.Now()
+		runAt := now.Add(1 * time.Hour)
 
 		j1 := &job.Job{
 			ID:        id,
 			Task:      task.SendEmailTask,
 			Payload:   json.RawMessage(sendEmailPayload),
-			RunAt:     now.Add(1 * time.Hour),
+			RunAt:     &runAt,
 			Status:    job.StatusQueued,
 			CreatedAt: now,
 		}
@@ -56,11 +59,13 @@ func TestSave(t *testing.T) {
 			t.Fatalf("expected no error, got %s", err.Error())
 		}
 
+		runAt2 := now.Add(2 * time.Hour)
+
 		j2 := &job.Job{
 			ID:        id,
 			Task:      task.SendEmailTask,
 			Payload:   json.RawMessage(sendEmailPayload),
-			RunAt:     now.Add(2 * time.Hour),
+			RunAt:     &runAt2,
 			Status:    job.StatusQueued,
 			CreatedAt: now,
 		}
@@ -79,13 +84,14 @@ func TestGet(t *testing.T) {
 		t.Parallel()
 
 		id := uuid.NewString()
-
 		now := time.Now().UTC()
+		runAt := now.Add(1 * time.Hour)
+
 		originalJob := &job.Job{
 			ID:        id,
 			Task:      task.SendEmailTask,
 			Payload:   json.RawMessage(sendEmailPayload),
-			RunAt:     now.Add(1 * time.Hour),
+			RunAt:     &runAt,
 			Status:    job.StatusQueued,
 			CreatedAt: now,
 		}
@@ -131,12 +137,13 @@ func TestUpdate(t *testing.T) {
 		t.Parallel()
 
 		now := time.Now()
+		runAt := now.Add(1 * time.Hour)
 
 		originalJob := &job.Job{
 			ID:        uuid.NewString(),
 			Task:      task.SendEmailTask,
 			Payload:   json.RawMessage(sendEmailPayload),
-			RunAt:     now.Add(1 * time.Hour),
+			RunAt:     &runAt,
 			Status:    job.StatusQueued,
 			CreatedAt: now,
 		}
@@ -184,12 +191,13 @@ func TestUpdate(t *testing.T) {
 		t.Parallel()
 
 		now := time.Now()
+		runAt := now.Add(1 * time.Hour)
 
 		originalJob := &job.Job{
 			ID:        uuid.NewString(),
 			Task:      task.SendEmailTask,
 			Payload:   json.RawMessage(sendEmailPayload),
-			RunAt:     now.Add(1 * time.Hour),
+			RunAt:     &runAt,
 			Status:    job.StatusQueued,
 			CreatedAt: now,
 		}

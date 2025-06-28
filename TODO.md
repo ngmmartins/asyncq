@@ -14,3 +14,4 @@
 - Consider returning a tx in some database methods to rollback in case of errors down the line. Like updating a job on the database and then
 removing from redis queueu that fails.
 - handle case where creating a job on db succeeds but enqueue on redis fails
+- add doc to code: interfaces, types, var, methos, etc. check how it's done in the standar library (what goes on interface and what goes on impl)

@@ -2,7 +2,6 @@ package job
 
 import (
 	"encoding/json"
-	"fmt"
 	"slices"
 	"time"
 
@@ -12,6 +11,7 @@ import (
 type Status string
 
 const (
+	StatusCreated   Status = "Created"
 	StatusQueued    Status = "Queued"
 	StatusRunning   Status = "Running"
 	StatusDone      Status = "Done"
@@ -20,6 +20,7 @@ const (
 )
 
 var allowedStatusTransitions = map[Status][]Status{
+	StatusCreated:   {StatusQueued},
 	StatusQueued:    {StatusRunning, StatusCancelled},
 	StatusRunning:   {StatusDone, StatusFailed},
 	StatusDone:      {},
@@ -31,7 +32,7 @@ type Job struct {
 	ID        string          `json:"id"`
 	Task      task.Task       `json:"task"`
 	Payload   json.RawMessage `json:"payload"`
-	RunAt     time.Time       `json:"run_at"`
+	RunAt     *time.Time      `json:"run_at,omitempty"`
 	Status    Status          `json:"status"`
 	CreatedAt time.Time       `json:"created_at"`
 }
@@ -50,13 +51,4 @@ func IsValidStatusTransition(from Status, to Status) bool {
 	}
 
 	return slices.Contains(allowed, to)
-}
-
-type InvalidStatusTransitionError struct {
-	From Status
-	To   Status
-}
-
-func (e *InvalidStatusTransitionError) Error() string {
-	return fmt.Sprintf("invalid status transition from %q to %q", e.From, e.To)
 }

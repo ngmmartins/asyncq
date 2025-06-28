@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log/slog"
 	"slices"
 	"time"
@@ -20,6 +22,11 @@ type JobService struct {
 	store  store.Store
 }
 
+var (
+	ErrRecordNotFound          = store.ErrRecordNotFound
+	ErrInvalidStatusTransition = errors.New("invalid status transition")
+)
+
 func NewJobService(logger *slog.Logger, queue queue.Queue, store store.Store) *JobService {
 	return &JobService{logger: logger, queue: queue, store: store}
 }
@@ -33,17 +40,19 @@ func (js *JobService) CreateJob(ctx context.Context, request *job.CreateRequest)
 
 	now := time.Now()
 
-	runAt := now
+	var status job.Status
 	if request.RunAt != nil {
-		runAt = *request.RunAt
+		status = job.StatusQueued
+	} else {
+		status = job.StatusCreated
 	}
 
 	job := job.Job{
 		ID:        uuid.NewString(),
 		Task:      request.Task,
 		Payload:   request.Payload,
-		RunAt:     runAt,
-		Status:    job.StatusQueued,
+		RunAt:     request.RunAt,
+		Status:    status,
 		CreatedAt: now,
 	}
 
@@ -53,36 +62,73 @@ func (js *JobService) CreateJob(ctx context.Context, request *job.CreateRequest)
 		return nil, err
 	}
 
-	err = js.queue.Enqueue(ctx, job.ID, job.RunAt)
-	if err != nil {
-		js.logger.Error("failed to enqueue job", "jobID", job.ID)
-		return nil, err
+	if job.RunAt != nil {
+		err = js.queue.Enqueue(ctx, job.ID, *job.RunAt)
+		if err != nil {
+			js.logger.Error("failed to enqueue job", "jobID", job.ID)
+			return nil, err
+		}
 	}
 
 	return &job, nil
 }
 
 func (js *JobService) GetJob(ctx context.Context, jobId string) (*job.Job, error) {
-	return js.store.Job().Get(ctx, jobId)
+	j, err := js.store.Job().Get(ctx, jobId)
+	if err != nil {
+		if errors.Is(err, store.ErrRecordNotFound) {
+			return nil, ErrRecordNotFound
+		}
+		return nil, err
+	}
+
+	return j, nil
+}
+
+func (js *JobService) ScheduleJob(ctx context.Context, jobId string, runAt time.Time) error {
+	j, err := js.store.Job().Get(ctx, jobId)
+	if err != nil {
+		if errors.Is(err, store.ErrRecordNotFound) {
+			return ErrRecordNotFound
+		}
+		return err
+	}
+
+	if !job.IsValidStatusTransition(j.Status, job.StatusQueued) {
+		return fmt.Errorf("%w from %q to %q", ErrInvalidStatusTransition, j.Status, job.StatusQueued)
+	}
+
+	j.RunAt = &runAt
+	j.Status = job.StatusQueued
+
+	err = js.store.Job().Update(ctx, j)
+	if err != nil {
+		return err
+	}
+
+	err = js.queue.Enqueue(ctx, j.ID, *j.RunAt)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (js *JobService) UpdateJobStatus(ctx context.Context, jobId string, newStatus job.Status) error {
 	j, err := js.store.Job().Get(ctx, jobId)
 	if err != nil {
+		if errors.Is(err, store.ErrRecordNotFound) {
+			return ErrRecordNotFound
+		}
 		return err
 	}
 
 	if !job.IsValidStatusTransition(j.Status, newStatus) {
-		return &job.InvalidStatusTransitionError{
-			From: j.Status,
-			To:   newStatus,
-		}
+		return fmt.Errorf("%w from %q to %q", ErrInvalidStatusTransition, j.Status, job.StatusQueued)
 	}
 
 	j.Status = newStatus
-	err = js.store.Job().Update(ctx, j)
-
-	return err
+	return js.store.Job().Update(ctx, j)
 }
 
 func (js *JobService) validateCreateJob(v *validator.Validator, request *job.CreateRequest) {
