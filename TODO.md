@@ -15,3 +15,4 @@
 removing from redis queueu that fails.
 - handle case where creating a job on db succeeds but enqueue on redis fails
 - add doc to code: interfaces, types, var, methos, etc. check how it's done in the standar library (what goes on interface and what goes on impl)
+- add other requests to bruno

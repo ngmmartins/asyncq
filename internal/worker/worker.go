@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/ngmmartins/asyncq/internal/email"
 	"github.com/ngmmartins/asyncq/internal/job"
 	"github.com/ngmmartins/asyncq/internal/queue"
 	"github.com/ngmmartins/asyncq/internal/service"
@@ -22,14 +23,16 @@ type Worker struct {
 	logger        *slog.Logger
 }
 
-func New(store store.Store, queue queue.Queue, logger *slog.Logger, jobService *service.JobService) *Worker {
+func New(store store.Store, queue queue.Queue, logger *slog.Logger,
+	jobService *service.JobService, emailSender email.EmailSender) *Worker {
+
 	return &Worker{
 		store:      store,
 		queue:      queue,
 		jobService: jobService,
 		taskExecutors: map[task.Task]TaskExecutor{
 			task.WebhookTask:   tasks.NewWebhookExecutor(logger),
-			task.SendEmailTask: tasks.NewSendEmailExecutor(logger),
+			task.SendEmailTask: tasks.NewSendEmailExecutor(logger, emailSender),
 		},
 		logger: logger,
 	}

@@ -26,7 +26,7 @@ run/api:
 ## run/worker: run the cmd/worker application
 .PHONY: run/worker
 run/worker:
-	go run ./cmd/worker -redis-url=${REDIS_URL} -db-dsn=${ASYNCQ_DB_DSN} -tick-interval=10s -log-level=Debug
+	go run ./cmd/worker -redis-url=${REDIS_URL} -db-dsn=${ASYNCQ_DB_DSN} -tick-interval=10s -log-level=Debug -smtp-host=${MAILTRAP_HOST} -smtp-port=25 -smtp-username=${MAILTRAP_USERNAME} -smtp-password=${MAILTRAP_PASSWORD}
 
 ## db/psql: connect to redis using redis-cli
 .PHONY: redis/cli

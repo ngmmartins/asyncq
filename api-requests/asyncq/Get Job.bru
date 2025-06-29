@@ -1,0 +1,15 @@
+meta {
+  name: Get Job
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{host}}/v1/jobs/:jobId
+  body: none
+  auth: inherit
+}
+
+params:path {
+  jobId: 949de8f1-492c-4041-a1b6-84cec7cd70f8
+}

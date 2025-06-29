@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/ngmmartins/asyncq/internal/bootstrap"
+	"github.com/ngmmartins/asyncq/internal/email"
 	"github.com/ngmmartins/asyncq/internal/queue"
 	"github.com/ngmmartins/asyncq/internal/service"
 	"github.com/ngmmartins/asyncq/internal/store/postgres"
@@ -22,7 +23,13 @@ type config struct {
 	redis        struct {
 		url string
 	}
-	db postgres.PostgresConfig
+	db   postgres.PostgresConfig
+	smtp struct {
+		host     string
+		port     int
+		username string
+		password string
+	}
 }
 
 func main() {
@@ -35,8 +42,9 @@ func main() {
 	store := postgres.New(&cfg.db, logger)
 	queue := queue.NewRedisQueue(logger, redis)
 	jobService := service.NewJobService(logger, queue, store)
+	emailSender := email.NewMailtrapSender(logger, cfg.smtp.host, cfg.smtp.port, cfg.smtp.username, cfg.smtp.password)
 
-	w := worker.New(store, queue, logger, jobService)
+	w := worker.New(store, queue, logger, jobService, emailSender)
 
 	logger.Info("worker started", "env", cfg.env)
 	w.Run(context.Background(), cfg.tickInterval)
@@ -55,6 +63,11 @@ func parseFlags(cfg *config) {
 	flag.IntVar(&cfg.db.MaxOpenConns, "db-max-open-conns", 25, "PostgreSQL max open connections")
 	flag.IntVar(&cfg.db.MaxIdleConns, "db-max-idle-conns", 25, "PostgreSQL max idle connections")
 	flag.DurationVar(&cfg.db.MaxIdleTime, "db-max-idle-time", 15*time.Minute, "PostgreSQL max connection idle time")
+
+	flag.StringVar(&cfg.smtp.host, "smtp-host", "", "SMTP host")
+	flag.IntVar(&cfg.smtp.port, "smtp-port", 25, "SMTP port")
+	flag.StringVar(&cfg.smtp.username, "smtp-username", "", "SMTP username")
+	flag.StringVar(&cfg.smtp.password, "smtp-password", "", "SMTP password")
 
 	flag.Parse()
 

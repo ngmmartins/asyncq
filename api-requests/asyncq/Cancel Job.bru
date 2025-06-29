@@ -1,0 +1,15 @@
+meta {
+  name: Cancel Job
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{host}}/v1/jobs/:jobId/cancel
+  body: json
+  auth: inherit
+}
+
+params:path {
+  jobId: f9e67ec2-8486-41d1-b048-7dd20155dd96
+}

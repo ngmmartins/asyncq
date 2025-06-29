@@ -1,0 +1,24 @@
+meta {
+  name: Create Job [send_email]
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{host}}/v1/jobs
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "task": "send_email",
+    "payload": {
+      "from": "info@example.com",
+      "to": "user@example.com",
+      "subject": "Welcome!",
+      "body": "Hello!"
+    },
+    "run_at": "2025-06-30T16:37:00.000+01:00"
+  }
+}
