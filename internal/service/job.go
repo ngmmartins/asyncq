@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/ngmmartins/asyncq/internal/job"
+	"github.com/ngmmartins/asyncq/internal/pagination"
 	"github.com/ngmmartins/asyncq/internal/queue"
 	"github.com/ngmmartins/asyncq/internal/store"
 	"github.com/ngmmartins/asyncq/internal/task"
@@ -73,6 +74,21 @@ func (js *JobService) CreateJob(ctx context.Context, request *job.CreateRequest)
 	return &job, nil
 }
 
+func (js *JobService) SearchJobs(ctx context.Context, criteria *job.SearchCriteria) ([]*job.Job, *pagination.Metadata, error) {
+	v := validator.New()
+	js.validateSearchJobs(v, criteria)
+	if !v.Valid() {
+		return nil, nil, &validator.ValidationError{Errors: v.Errors}
+	}
+
+	jobs, metadata, err := js.store.Job().Search(ctx, criteria)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return jobs, metadata, nil
+}
+
 func (js *JobService) GetJob(ctx context.Context, jobId string) (*job.Job, error) {
 	j, err := js.store.Job().Get(ctx, jobId)
 	if err != nil {
@@ -129,6 +145,17 @@ func (js *JobService) UpdateJobStatus(ctx context.Context, jobId string, newStat
 
 	j.Status = newStatus
 	return js.store.Job().Update(ctx, j)
+}
+
+func (js *JobService) validateSearchJobs(v *validator.Validator, criteria *job.SearchCriteria) {
+	if criteria.Task != "" {
+		v.Check(slices.Contains(task.Tasks, criteria.Task), "task", "unsupported task")
+	}
+	if criteria.Status != "" {
+		v.Check(slices.Contains(job.StatusList, criteria.Status), "status", "unsupported status")
+	}
+	pagination.Validate(v, &criteria.Params, true)
+
 }
 
 func (js *JobService) validateCreateJob(v *validator.Validator, request *job.CreateRequest) {

@@ -5,11 +5,13 @@ import (
 	"slices"
 	"time"
 
+	"github.com/ngmmartins/asyncq/internal/pagination"
 	"github.com/ngmmartins/asyncq/internal/task"
 )
 
 type Status string
 
+// add to statusList when adding here a new const
 const (
 	StatusCreated   Status = "Created"
 	StatusQueued    Status = "Queued"
@@ -18,6 +20,8 @@ const (
 	StatusFailed    Status = "Failed"
 	StatusCancelled Status = "Cancelled"
 )
+
+var StatusList = []Status{StatusCreated, StatusQueued, StatusRunning, StatusDone, StatusFailed, StatusCancelled}
 
 var allowedStatusTransitions = map[Status][]Status{
 	StatusCreated:   {StatusQueued},
@@ -51,4 +55,12 @@ func IsValidStatusTransition(from Status, to Status) bool {
 	}
 
 	return slices.Contains(allowed, to)
+}
+
+type SearchCriteria struct {
+	Task      task.Task
+	RunBefore *time.Time
+	RunAfter  *time.Time
+	Status    Status
+	pagination.Params
 }

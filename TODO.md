@@ -2,17 +2,25 @@
     - suppport multiple "To"s on send_email
     - support CC and BCC on send_email
     - Evaluate sending attachments on send_email
+    - email templates
+    - plaintext/html support
 - Implement retry logic and backoff
+- endpoint to manually retry a job (if failed)
 - Authentication
 - Check errors overall - if they are correctly logged and handled/returned in the right places
 - Add logic to retry failed job
 - check redis docs on operations used and document stuff like ZREM nonexisting members are ignored and operation doesn't fail
-- check /TODOs
 - Check database connections configurations on each application (api, worker, ...)
 - Create doc explaining how to setup local database
 - check context timeouts used in database calls. is it reasonable? how it affects eventual timeouts that come from above context?
 - Consider returning a tx in some database methods to rollback in case of errors down the line. Like updating a job on the database and then
 removing from redis queueu that fails.
 - handle case where creating a job on db succeeds but enqueue on redis fails
-- add doc to code: interfaces, types, var, methos, etc. check how it's done in the standar library (what goes on interface and what goes on impl)
-- add other requests to bruno
+- add doc to code: packages, interfaces, types, var, methos, etc. check how it's done in the standar library (what goes on interface and what goes on impl)
+- metrics, monitoring
+    - n jobs by status
+    - avg time to run, failures, retries
+- recurring jobs
+
+
+- check /TODOs

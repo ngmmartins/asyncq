@@ -1,6 +1,8 @@
 package util
 
-import "log/slog"
+import (
+	"log/slog"
+)
 
 func ParseLogLevel(logLevel string) slog.Leveler {
 	switch logLevel {

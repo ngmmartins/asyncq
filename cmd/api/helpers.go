@@ -6,7 +6,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
+	"time"
+
+	"github.com/ngmmartins/asyncq/internal/validator"
 )
 
 type envelope map[string]any
@@ -81,4 +86,57 @@ func (app *application) writeJSON(w http.ResponseWriter, status int, data envelo
 	w.Write(js)
 
 	return nil
+}
+
+func (app *application) readString(qs url.Values, key string, defaultValue string) string {
+	s := qs.Get(key)
+
+	if s == "" {
+		return defaultValue
+	}
+
+	return s
+}
+
+func (app *application) readInt(qs url.Values, key string, defaultValue int, v *validator.Validator) int {
+	// Extract the value from the query string.
+	s := qs.Get(key)
+
+	// If no key exists (or the value is empty) then return the default value.
+	if s == "" {
+		return defaultValue
+	}
+
+	// Try to convert the value to an int. If this fails, add an error message to the
+	// validator instance and return the default value.
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		v.AddError(key, "must be an integer value")
+		return defaultValue
+	}
+
+	// Otherwise, return the converted integer value.
+	return i
+}
+
+func (app *application) readTime(qs url.Values, key string, v *validator.Validator) *time.Time {
+	s := qs.Get(key)
+
+	if s == "" {
+		return nil
+	}
+
+	t, err := time.Parse(time.RFC3339, s)
+	if err == nil {
+		return &t
+	}
+
+	if strings.Contains(s, " ") {
+		cleaned := strings.Replace(s, " ", "+", 1)
+		if t, err = time.Parse(time.RFC3339, cleaned); err != nil {
+			v.AddError("run_before", "invalid time format")
+		}
+	}
+
+	return &t
 }

@@ -4,9 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/ngmmartins/asyncq/internal/job"
+	"github.com/ngmmartins/asyncq/internal/pagination"
 	"github.com/ngmmartins/asyncq/internal/store"
 )
 
@@ -49,6 +51,59 @@ func (s *PostgresStore) Save(ctx context.Context, job *job.Job) error {
 	}
 
 	return nil
+}
+
+func (s *PostgresStore) Search(ctx context.Context, criteria *job.SearchCriteria) ([]*job.Job, *pagination.Metadata, error) {
+	query := fmt.Sprintf(`SELECT count(*) OVER(), id, task, payload, run_at, status, created_at
+	FROM jobs
+	WHERE (task = $1 OR $1::text IS NULL OR $1 = '')
+	AND (run_at >= $2 OR $2::timestamptz IS NULL)
+	AND (run_at <= $3 OR $3::timestamptz IS NULL)
+	AND (status = $4 OR $4::text IS NULL OR $4 = '')
+	ORDER BY %s %s, created_at DESC
+	LIMIT $5 OFFSET $6`, criteria.SortColumn(), criteria.SortDirection())
+
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	args := []any{criteria.Task, criteria.RunAfter, criteria.RunBefore, criteria.Status, criteria.Limit(), criteria.Offset()}
+
+	rows, err := s.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	defer rows.Close()
+
+	totalRecords := 0
+	jobs := []*job.Job{}
+
+	for rows.Next() {
+		var j job.Job
+
+		err := rows.Scan(
+			&totalRecords,
+			&j.ID,
+			&j.Task,
+			&j.Payload,
+			&j.RunAt,
+			&j.Status,
+			&j.CreatedAt,
+		)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		jobs = append(jobs, &j)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, nil, err
+	}
+
+	metadata := pagination.NewMetadata(totalRecords, criteria.Page, criteria.PageSize)
+
+	return jobs, metadata, nil
 }
 
 // Gets the [job.Job] identified by the given jobId from the database.

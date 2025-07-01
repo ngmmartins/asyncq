@@ -8,6 +8,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/ngmmartins/asyncq/internal/job"
 	"github.com/ngmmartins/asyncq/internal/service"
+	"github.com/ngmmartins/asyncq/internal/task"
 	"github.com/ngmmartins/asyncq/internal/validator"
 )
 
@@ -32,6 +33,32 @@ func (app *application) createJobHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	err = app.writeJSON(w, http.StatusCreated, envelope{"job": job}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}
+
+func (app *application) searchJobsHandler(w http.ResponseWriter, r *http.Request) {
+	v := validator.New()
+
+	criteria := app.readSearchCriteria(r, v)
+	if !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	jobs, metadata, err := app.jobService.SearchJobs(r.Context(), criteria)
+	if err != nil {
+		var validationError *validator.ValidationError
+		if errors.As(err, &validationError) {
+			app.failedValidationResponse(w, r, validationError.Errors)
+			return
+		}
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"jobs": jobs, "metadata": metadata}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
@@ -125,4 +152,29 @@ func (app *application) cancelJobHandler(w http.ResponseWriter, r *http.Request)
 		app.serverErrorResponse(w, r, err)
 		return
 	}
+}
+
+func (app *application) readSearchCriteria(r *http.Request, v *validator.Validator) *job.SearchCriteria {
+	criteria := &job.SearchCriteria{}
+
+	queryString := r.URL.Query()
+
+	t := app.readString(queryString, "task", "")
+	if t != "" {
+		criteria.Task = task.Task(t)
+	}
+
+	criteria.RunBefore = app.readTime(queryString, "run_before", v)
+	criteria.RunAfter = app.readTime(queryString, "run_after", v)
+
+	status := app.readString(queryString, "status", "")
+	if status != "" {
+		criteria.Status = job.Status(status)
+	}
+
+	criteria.Page = app.readInt(queryString, "page", 1, v)
+	criteria.PageSize = app.readInt(queryString, "page_size", 20, v)
+	criteria.SortBy = app.readString(queryString, "sort_by", "-created_at")
+
+	return criteria
 }

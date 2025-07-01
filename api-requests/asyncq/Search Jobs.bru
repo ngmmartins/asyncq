@@ -1,0 +1,21 @@
+meta {
+  name: Search Jobs
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{host}}/v1/jobs?task=send_email&run_after=2025-06-30T16:00:00.000+01:00&page=1&page_size=20&sort_by=-created_at
+  body: json
+  auth: inherit
+}
+
+params:query {
+  task: send_email
+  run_after: 2025-06-30T16:00:00.000+01:00
+  page: 1
+  page_size: 20
+  sort_by: -created_at
+  ~run_before: 2025-06-30T16:00:00.000+01:00
+  ~status: Done
+}
