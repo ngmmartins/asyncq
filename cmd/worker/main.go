@@ -36,7 +36,7 @@ func main() {
 	var cfg config
 	parseFlags(&cfg)
 
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: cfg.logLevel}))
 
 	redis := bootstrap.NewRedisClient(logger, cfg.redis.url)
 	store := postgres.New(&cfg.db, logger)

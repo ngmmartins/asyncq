@@ -47,7 +47,7 @@ func (w *Worker) Run(ctx context.Context, tickInterval time.Duration) {
 		select {
 		case <-ticker.C:
 			now := time.Now()
-			w.logger.Info("ticking", "time", now)
+			w.logger.Debug("ticking", "time", now)
 
 			jobIds, err := w.queue.Dequeue(ctx, now)
 			if err != nil {
@@ -66,6 +66,7 @@ func (w *Worker) Run(ctx context.Context, tickInterval time.Duration) {
 }
 
 func (w *Worker) handleJob(ctx context.Context, jobId string) {
+	w.logger.Debug("handling job", "jobId", jobId)
 	// update job status and save it
 	err := w.jobService.UpdateJobStatus(ctx, jobId, job.StatusRunning)
 	if err != nil {
@@ -82,19 +83,78 @@ func (w *Worker) handleJob(ctx context.Context, jobId string) {
 	}
 
 	err = w.executeTask(j)
-	if err != nil {
-		j.Status = job.StatusFailed
-		//TODO add logic here to handle retries and backoff.
-		// could increment attempts and in in range enque a new job with runAt now (or with a configurable delay)
 
-		//TODO should this be logged as error? or even logged at all?
-		w.logger.Error("Job task execution failed", "id", j.ID, "err", err.Error())
+	now := time.Now()
+	updateFields := job.UpdateFields{}
+
+	updateFields.SetFinishedAt = true
+	updateFields.FinishedAt = &now
+
+	if err != nil {
+		w.logger.Debug("job execution failed", "jobId", jobId, "err", err.Error())
+		updateFields.SetLastError = true
+		lastErr := err.Error()
+		updateFields.LastError = &lastErr
+
+		enqueueJob := false
+		// Check if the job still has retry attempts left
+		if j.Retries < j.MaxRetries {
+			w.logger.Debug("job still has remaining attempts", "jobId", jobId, "retries", j.Retries, "maxRetries", j.MaxRetries)
+			enqueueJob = true
+
+			updateFields.SetRetries = true
+			newRetries := j.Retries + 1
+			updateFields.Retries = &newRetries
+
+			updateFields.SetStatus = true
+			status := job.StatusQueued
+			updateFields.Status = &status
+
+			updateFields.SetRunAt = true
+			nextRunAt := now.Add(time.Second * time.Duration(j.RetryDelaySec))
+			updateFields.RunAt = &nextRunAt
+
+		} else {
+			w.logger.Debug("job does not have remaining attempts", "jobId", jobId, "retries", j.Retries, "maxRetries", j.MaxRetries)
+			updateFields.SetStatus = true
+			status := job.StatusFailed
+			updateFields.Status = &status
+		}
+
+		w.logger.Debug("updating job fields", "jobId", jobId, "updateFields", updateFields)
+		err = w.jobService.UpdateJobFields(ctx, jobId, &updateFields)
+		if err != nil {
+			w.logger.Error("Error updating job fields", "id", jobId, "updateFields", updateFields, "err", err.Error())
+			//TODO what to do here?
+			return
+		}
+
+		if enqueueJob {
+			w.logger.Debug("Enqueueing job again with new RunAt", "jobId", jobId, "RunAt", updateFields.RunAt)
+			// Enqueue the job again to be retried
+			err := w.queue.Enqueue(ctx, j.ID, *updateFields.RunAt)
+			if err != nil {
+				w.logger.Error("failed to enqueue job", "jobID", j.ID)
+			}
+		}
+
 		return
 	}
 
-	err = w.jobService.UpdateJobStatus(ctx, jobId, job.StatusDone)
+	w.logger.Debug("job execution succedded", "jobId", jobId)
+
+	// Clear eventual past errors
+	updateFields.SetLastError = true
+	updateFields.LastError = nil
+
+	updateFields.SetStatus = true
+	status := job.StatusDone
+	updateFields.Status = &status
+
+	w.logger.Debug("updating job fields", "jobId", jobId, "updateFields", updateFields)
+	err = w.jobService.UpdateJobFields(ctx, jobId, &updateFields)
 	if err != nil {
-		w.logger.Error("Error updating job status", "id", jobId, "newJobStatus", j.Status, "err", err.Error())
+		w.logger.Error("Error updating job fields", "id", jobId, "updateFields", updateFields, "err", err.Error())
 		//TODO what to do here?
 		return
 	}

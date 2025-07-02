@@ -48,13 +48,26 @@ func (js *JobService) CreateJob(ctx context.Context, request *job.CreateRequest)
 		status = job.StatusCreated
 	}
 
+	maxRetries := 0
+	if request.MaxRetries != nil {
+		maxRetries = *request.MaxRetries
+	}
+
+	// if user didn't provided a delay we apply a default
+	retryDelay := job.DefaultRetryDelay
+	if request.RetryDelaySec != nil {
+		retryDelay = *request.RetryDelaySec
+	}
+
 	job := job.Job{
-		ID:        uuid.NewString(),
-		Task:      request.Task,
-		Payload:   request.Payload,
-		RunAt:     request.RunAt,
-		Status:    status,
-		CreatedAt: now,
+		ID:            uuid.NewString(),
+		Task:          request.Task,
+		Payload:       request.Payload,
+		RunAt:         request.RunAt,
+		Status:        status,
+		CreatedAt:     now,
+		MaxRetries:    maxRetries,
+		RetryDelaySec: retryDelay,
 	}
 
 	err := js.store.Job().Save(ctx, &job)
@@ -130,6 +143,36 @@ func (js *JobService) ScheduleJob(ctx context.Context, jobId string, runAt time.
 	return nil
 }
 
+func (js *JobService) UpdateJobFields(ctx context.Context, jobId string, fields *job.UpdateFields) error {
+	j, err := js.store.Job().Get(ctx, jobId)
+	if err != nil {
+		if errors.Is(err, store.ErrRecordNotFound) {
+			return ErrRecordNotFound
+		}
+		return err
+	}
+
+	if fields.SetRunAt {
+		j.RunAt = fields.RunAt
+	}
+	//TODO should check here the status transiction? if so how to reply back and be handled?
+	if fields.SetStatus {
+		j.Status = *fields.Status
+	}
+	if fields.SetFinishedAt {
+		j.FinishedAt = fields.FinishedAt
+	}
+	if fields.SetRetries {
+		j.Retries = *fields.Retries
+	}
+	if fields.SetLastError {
+		j.LastError = fields.LastError
+	}
+
+	return js.store.Job().Update(ctx, j)
+
+}
+
 func (js *JobService) UpdateJobStatus(ctx context.Context, jobId string, newStatus job.Status) error {
 	j, err := js.store.Job().Get(ctx, jobId)
 	if err != nil {
@@ -163,6 +206,8 @@ func (js *JobService) validateCreateJob(v *validator.Validator, request *job.Cre
 	v.Check(slices.Contains(task.Tasks, request.Task), "task", "unsupported task")
 	v.CheckRequired(len(request.Payload) > 0, "payload")
 	v.Check(request.RunAt == nil || request.RunAt.After(time.Now()), "run_at", "must be in the future")
+	v.Check(request.MaxRetries == nil || *request.MaxRetries >= 0, "max_retries", "if set must be equal or greater than 0")
+	v.Check(request.RetryDelaySec == nil || *request.RetryDelaySec > 0, "retry_delay_sec", "if set must be greater than 0")
 
 	_, err := task.DecodeAndValidatePayload(request.Task, request.Payload, v)
 	if err != nil {

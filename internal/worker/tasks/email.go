@@ -1,8 +1,8 @@
 package tasks
 
 import (
-	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -27,11 +27,14 @@ func (e *SendEmailExecutor) Execute(j job.Job) error {
 		return fmt.Errorf("invalid email payload: %w", err)
 	}
 
-	return e.emailSender.Send(
-		context.Background(),
-		payload.To,
-		payload.From,
-		payload.Subject,
-		payload.Body,
-	)
+	//TODO REMOVE THIS
+	return errors.New("some error")
+
+	// return e.emailSender.Send(
+	// 	context.Background(),
+	// 	payload.To,
+	// 	payload.From,
+	// 	payload.Subject,
+	// 	payload.Body,
+	// )
 }

@@ -5,6 +5,8 @@
     - email templates
     - plaintext/html support
 - Implement retry logic and backoff
+- endpoint to allow editing a job that was not yet runned (but maybe not allow edit runAt? because it's already enqued with that score)
+- add job database indexs
 - endpoint to manually retry a job (if failed)
 - Authentication
 - Check errors overall - if they are correctly logged and handled/returned in the right places

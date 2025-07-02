@@ -28,10 +28,10 @@ func newPostgresJobStore(postgresStore *PostgresStore) store.JobStore {
 //
 // If the insert doesn't change any row, a [store.ErrNoRowsAffected] error is returned.
 func (s *PostgresStore) Save(ctx context.Context, job *job.Job) error {
-	query := `INSERT INTO jobs (id, task, payload, run_at, status, created_at)
-	VALUES ($1, $2, $3, $4, $5, $6)`
+	query := `INSERT INTO jobs (id, task, payload, run_at, status, created_at, retries, max_retries, retry_delay_sec)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
 
-	args := []any{job.ID, job.Task, job.Payload, job.RunAt, job.Status, job.CreatedAt}
+	args := []any{job.ID, job.Task, job.Payload, job.RunAt, job.Status, job.CreatedAt, job.Retries, job.MaxRetries, job.RetryDelaySec}
 
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
@@ -54,7 +54,8 @@ func (s *PostgresStore) Save(ctx context.Context, job *job.Job) error {
 }
 
 func (s *PostgresStore) Search(ctx context.Context, criteria *job.SearchCriteria) ([]*job.Job, *pagination.Metadata, error) {
-	query := fmt.Sprintf(`SELECT count(*) OVER(), id, task, payload, run_at, status, created_at
+	query := fmt.Sprintf(`SELECT count(*) OVER(), 
+	id, task, payload, run_at, status, created_at, finished_at, retries, max_retries, retry_delay_sec, last_error
 	FROM jobs
 	WHERE (task = $1 OR $1::text IS NULL OR $1 = '')
 	AND (run_at >= $2 OR $2::timestamptz IS NULL)
@@ -89,6 +90,11 @@ func (s *PostgresStore) Search(ctx context.Context, criteria *job.SearchCriteria
 			&j.RunAt,
 			&j.Status,
 			&j.CreatedAt,
+			&j.FinishedAt,
+			&j.Retries,
+			&j.MaxRetries,
+			&j.RetryDelaySec,
+			&j.LastError,
 		)
 		if err != nil {
 			return nil, nil, err
@@ -110,7 +116,7 @@ func (s *PostgresStore) Search(ctx context.Context, criteria *job.SearchCriteria
 //
 // In case the record does not exist in the database a [store.ErrRecordNotFound] error is returned
 func (s *PostgresStore) Get(ctx context.Context, jobId string) (*job.Job, error) {
-	query := `SELECT id, task, payload, run_at, status, created_at
+	query := `SELECT id, task, payload, run_at, status, created_at, finished_at, retries, max_retries, retry_delay_sec, last_error
 	FROM jobs
 	WHERE id = $1`
 
@@ -126,6 +132,11 @@ func (s *PostgresStore) Get(ctx context.Context, jobId string) (*job.Job, error)
 		&job.RunAt,
 		&job.Status,
 		&job.CreatedAt,
+		&job.FinishedAt,
+		&job.Retries,
+		&job.MaxRetries,
+		&job.RetryDelaySec,
+		&job.LastError,
 	)
 
 	if err != nil {
@@ -141,17 +152,18 @@ func (s *PostgresStore) Get(ctx context.Context, jobId string) (*job.Job, error)
 }
 
 // Updates the given [job.Job] in the database.
-// The fields that will be updated are: [job.Job].Task, [job.Job].Payload, [job.Job].RunAt and [job.Job].Status.
+// The fields that will be updated are: [job.Job].Task, [job.Job].Payload, [job.Job].RunAt, [job.Job].Status
+// [job.Job].FinishedAt, [job.Job].Retries, [job.Job].MaxRetries and [job.Job].LastError.
 // All other changes provided in the struct will be ignored.
 // The SQL Where clause will use the [job.Job].ID to update the record.
 //
 // If the update doesn't change any row, a [store.ErrNoRowsAffected] error is returned.
 func (s *PostgresStore) Update(ctx context.Context, job *job.Job) error {
 	query := `UPDATE jobs
-	SET task = $1, payload = $2, run_at = $3, status = $4
-	WHERE id = $5`
+	SET task = $1, payload = $2, run_at = $3, status = $4, finished_at = $5, retries = $6, max_retries = $7, last_error = $8
+	WHERE id = $9`
 
-	args := []any{job.Task, job.Payload, job.RunAt, job.Status, job.ID}
+	args := []any{job.Task, job.Payload, job.RunAt, job.Status, job.FinishedAt, job.Retries, job.MaxRetries, job.LastError, job.ID}
 
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
