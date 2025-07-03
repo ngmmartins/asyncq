@@ -27,7 +27,7 @@ func newPostgresJobStore(postgresStore *PostgresStore) store.JobStore {
 // Saves a new [job.Job] in the database.
 //
 // If the insert doesn't change any row, a [store.ErrNoRowsAffected] error is returned.
-func (s *PostgresStore) Save(ctx context.Context, job *job.Job) error {
+func (s *PostgresJobStore) Save(ctx context.Context, job *job.Job) error {
 	query := `INSERT INTO jobs (id, task, payload, run_at, status, created_at, retries, max_retries, retry_delay_sec)
 	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
 
@@ -53,7 +53,7 @@ func (s *PostgresStore) Save(ctx context.Context, job *job.Job) error {
 	return nil
 }
 
-func (s *PostgresStore) Search(ctx context.Context, criteria *job.SearchCriteria) ([]*job.Job, *pagination.Metadata, error) {
+func (s *PostgresJobStore) Search(ctx context.Context, criteria *job.SearchCriteria) ([]*job.Job, *pagination.Metadata, error) {
 	query := fmt.Sprintf(`SELECT count(*) OVER(), 
 	id, task, payload, run_at, status, created_at, finished_at, retries, max_retries, retry_delay_sec, last_error
 	FROM jobs
@@ -115,7 +115,7 @@ func (s *PostgresStore) Search(ctx context.Context, criteria *job.SearchCriteria
 // Gets the [job.Job] identified by the given jobId from the database.
 //
 // In case the record does not exist in the database a [store.ErrRecordNotFound] error is returned
-func (s *PostgresStore) Get(ctx context.Context, jobId string) (*job.Job, error) {
+func (s *PostgresJobStore) Get(ctx context.Context, jobId string) (*job.Job, error) {
 	query := `SELECT id, task, payload, run_at, status, created_at, finished_at, retries, max_retries, retry_delay_sec, last_error
 	FROM jobs
 	WHERE id = $1`
@@ -158,7 +158,7 @@ func (s *PostgresStore) Get(ctx context.Context, jobId string) (*job.Job, error)
 // The SQL Where clause will use the [job.Job].ID to update the record.
 //
 // If the update doesn't change any row, a [store.ErrNoRowsAffected] error is returned.
-func (s *PostgresStore) Update(ctx context.Context, job *job.Job) error {
+func (s *PostgresJobStore) Update(ctx context.Context, job *job.Job) error {
 	query := `UPDATE jobs
 	SET task = $1, payload = $2, run_at = $3, status = $4, finished_at = $5, retries = $6, max_retries = $7, last_error = $8
 	WHERE id = $9`

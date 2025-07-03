@@ -23,11 +23,6 @@ type JobService struct {
 	store  store.Store
 }
 
-var (
-	ErrRecordNotFound          = store.ErrRecordNotFound
-	ErrInvalidStatusTransition = errors.New("invalid status transition")
-)
-
 func NewJobService(logger *slog.Logger, queue queue.Queue, store store.Store) *JobService {
 	return &JobService{logger: logger, queue: queue, store: store}
 }

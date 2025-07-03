@@ -7,7 +7,6 @@
 - endpoint to allow editing a job that was not yet runned (but maybe not allow edit runAt? because it's already enqued with that score)
 - add job database indexs
 - endpoint to manually retry a job (if failed)
-- Authentication
 - Check errors overall - if they are correctly logged and handled/returned in the right places
 - check redis docs on operations used and document stuff like ZREM nonexisting members are ignored and operation doesn't fail
 - Check database connections configurations on each application (api, worker, ...)
@@ -20,6 +19,11 @@
     - n jobs by status
     - avg time to run, failures, retries
 - recurring jobs
+- consider having a backgroud goroutine to clean expired tokens
+- implement POST /v1/api-keys to create an api key for an account. should require authentication (middleware). generates key plaintext, saves the hash, returns plaintext only once
+- implement GET /v1/api-keys excluding hash and plaintext. 
+- implement DELETE /v1/api-keys/:id	to delete/revoke a key
+- implement PATCH /v1/api-keys/:id	to update name or something else?? check if makes sense
 
 
 - check /TODOs

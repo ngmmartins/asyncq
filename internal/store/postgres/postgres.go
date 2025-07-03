@@ -28,6 +28,14 @@ func (s *PostgresStore) Job() store.JobStore {
 	return newPostgresJobStore(s)
 }
 
+func (s *PostgresStore) Account() store.AccountStore {
+	return newPostgresAccountStore(s)
+}
+
+func (s *PostgresStore) Token() store.TokenStore {
+	return newPostgresTokenStore(s)
+}
+
 func New(cfg *PostgresConfig, logger *slog.Logger) *PostgresStore {
 	store := &PostgresStore{}
 

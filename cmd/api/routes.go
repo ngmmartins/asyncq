@@ -13,6 +13,8 @@ func (app *application) routes() http.Handler {
 
 	router.HandlerFunc(http.MethodGet, "/v1/health", app.healthHandler)
 
+	router.HandlerFunc(http.MethodPost, "/v1/tokens/authentication", app.createAuthenticationTokenHandler)
+
 	router.HandlerFunc(http.MethodPost, "/v1/jobs", app.createJobHandler)
 	router.HandlerFunc(http.MethodGet, "/v1/jobs", app.searchJobsHandler)
 	router.HandlerFunc(http.MethodGet, "/v1/jobs/:id", app.getJobHandler)

@@ -30,12 +30,13 @@ type config struct {
 }
 
 type application struct {
-	config     config
-	logger     *slog.Logger
-	queue      queue.Queue
-	store      store.Store
-	jobService *service.JobService
-	wg         sync.WaitGroup
+	config       config
+	logger       *slog.Logger
+	queue        queue.Queue
+	store        store.Store
+	jobService   *service.JobService
+	tokenService *service.TokenService
+	wg           sync.WaitGroup
 }
 
 func main() {
@@ -48,13 +49,15 @@ func main() {
 	store := postgres.New(&cfg.db, logger)
 	queue := queue.NewRedisQueue(logger, redis)
 	jobService := service.NewJobService(logger, queue, store)
+	tokenService := service.NewTokenService(logger, store)
 
 	app := &application{
-		config:     cfg,
-		logger:     logger,
-		queue:      queue,
-		store:      store,
-		jobService: jobService,
+		config:       cfg,
+		logger:       logger,
+		queue:        queue,
+		store:        store,
+		jobService:   jobService,
+		tokenService: tokenService,
 	}
 
 	err := app.serve()

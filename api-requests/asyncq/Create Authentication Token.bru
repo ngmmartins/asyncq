@@ -1,0 +1,18 @@
+meta {
+  name: Create Authentication Token
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{host}}/v1/tokens/authentication
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "email": "test@example.com",
+    "password": "ahah"
+  }
+}
