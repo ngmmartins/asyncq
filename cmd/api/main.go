@@ -30,13 +30,15 @@ type config struct {
 }
 
 type application struct {
-	config       config
-	logger       *slog.Logger
-	queue        queue.Queue
-	store        store.Store
-	jobService   *service.JobService
-	tokenService *service.TokenService
-	wg           sync.WaitGroup
+	config         config
+	logger         *slog.Logger
+	queue          queue.Queue
+	store          store.Store
+	jobService     *service.JobService
+	tokenService   *service.TokenService
+	accountService *service.AccountService
+	apiKeyService  *service.APIKeyService
+	wg             sync.WaitGroup
 }
 
 func main() {
@@ -50,14 +52,18 @@ func main() {
 	queue := queue.NewRedisQueue(logger, redis)
 	jobService := service.NewJobService(logger, queue, store)
 	tokenService := service.NewTokenService(logger, store)
+	accountService := service.NewAccountService(logger, store)
+	apiKeyService := service.NewAPIKeyService(logger, store)
 
 	app := &application{
-		config:       cfg,
-		logger:       logger,
-		queue:        queue,
-		store:        store,
-		jobService:   jobService,
-		tokenService: tokenService,
+		config:         cfg,
+		logger:         logger,
+		queue:          queue,
+		store:          store,
+		jobService:     jobService,
+		tokenService:   tokenService,
+		accountService: accountService,
+		apiKeyService:  apiKeyService,
 	}
 
 	err := app.serve()

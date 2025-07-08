@@ -1,29 +1,33 @@
-- send_mail
-    - suppport multiple "To"s on send_email
-    - support CC and BCC on send_email
-    - Evaluate sending attachments on send_email
-    - email templates
-    - plaintext/html support
-- endpoint to allow editing a job that was not yet runned (but maybe not allow edit runAt? because it's already enqued with that score)
-- add job database indexs
-- endpoint to manually retry a job (if failed)
-- Check errors overall - if they are correctly logged and handled/returned in the right places
-- check redis docs on operations used and document stuff like ZREM nonexisting members are ignored and operation doesn't fail
-- Check database connections configurations on each application (api, worker, ...)
-- Create doc explaining how to setup local database
-- check context timeouts used in database calls. is it reasonable? how it affects eventual timeouts that come from above context?
-- Consider returning a tx in some database methods to rollback in case of errors down the line. Like updating a job on the database and then removing from redis queueu that fails.
-- handle case where creating a job on db succeeds but enqueue on redis fails
-- add doc to code: packages, interfaces, types, var, methos, etc. check how it's done in the standar library (what goes on interface and what goes on impl)
-- metrics, monitoring
-    - n jobs by status
-    - avg time to run, failures, retries
-- recurring jobs
-- consider having a backgroud goroutine to clean expired tokens
-- implement POST /v1/api-keys to create an api key for an account. should require authentication (middleware). generates key plaintext, saves the hash, returns plaintext only once
-- implement GET /v1/api-keys excluding hash and plaintext. 
-- implement DELETE /v1/api-keys/:id	to delete/revoke a key
-- implement PATCH /v1/api-keys/:id	to update name or something else?? check if makes sense
-
-
+- TASKS
+    - send_mail
+        - suppport multiple "To"s on send_email
+        - support CC and BCC on send_email
+        - Evaluate sending attachments on send_email
+        - email templates
+        - plaintext/html support
+- JOBS
+    - endpoint to allow editing a job that was not yet runned (but maybe not allow edit runAt? because it's already enqued with that score)
+    - add job database indexs
+    - endpoint to manually retry a job (if failed)
+    - handle case where creating a job on db succeeds but enqueue on redis fails
+    - recurring jobs
+- TECH DEBT
+    - Check errors overall - if they are correctly logged and handled/returned in the right places
+    - check redis docs on operations used and document stuff like ZREM nonexisting members are ignored and operation doesn't fail
+    - Consider returning a tx in some database methods to rollback in case of errors down the line. Like updating a job on the database and then removing from redis queueu that fails.
+- OPTIMIZATIONS
+    - Check database connections configurations on each application (api, worker, ...)
+    - check context timeouts used in database calls. is it reasonable? how it affects eventual timeouts that come from above context?
+- DOCS
+    - Create doc explaining how to setup local database
+    - add doc to code: packages, interfaces, types, var, methos, etc. check how it's done in the standar library (what goes on interface and what goes on impl)
+- MONITORING
+    - metrics, monitoring
+        - n jobs by status
+        - avg time to run, failures, retries
+- AUTHENTICATION
+    - implement GET /v1/api-keys excluding hash and plaintext. 
+    - implement DELETE /v1/api-keys/:id	to delete/revoke a key
+    - implement PATCH /v1/api-keys/:id	to update name or something else?? check if makes sense
+    - consider having a backgroud goroutine to clean expired tokens
 - check /TODOs

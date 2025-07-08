@@ -18,7 +18,7 @@ type Token struct {
 	Plaintext string    `json:"token"`
 	Hash      []byte    `json:"-"`
 	AccountID string    `json:"-"`
-	Expiry    time.Time `json:"expiry"`
+	ExpiresAt time.Time `json:"expires_at"`
 	Scope     Scope     `json:"-"`
 }
 
@@ -26,7 +26,7 @@ func New(accountId string, ttl time.Duration, scope Scope) *Token {
 	token := &Token{
 		Plaintext: rand.Text(),
 		AccountID: accountId,
-		Expiry:    time.Now().Add(ttl),
+		ExpiresAt: time.Now().Add(ttl),
 		Scope:     scope,
 	}
 

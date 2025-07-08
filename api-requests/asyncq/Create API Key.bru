@@ -1,0 +1,21 @@
+meta {
+  name: Create API Key
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{host}}/v1/api-keys
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: 3YRZBVNPOTACD6VZUYQJIQFPRG
+}
+
+body:json {
+  {
+    "Name": "Test Key"
+  }
+}

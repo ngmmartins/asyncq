@@ -27,9 +27,9 @@ func NewJobService(logger *slog.Logger, queue queue.Queue, store store.Store) *J
 	return &JobService{logger: logger, queue: queue, store: store}
 }
 
-func (js *JobService) CreateJob(ctx context.Context, request *job.CreateRequest) (*job.Job, error) {
+func (s *JobService) CreateJob(ctx context.Context, request *job.CreateRequest) (*job.Job, error) {
 	v := validator.New()
-	js.validateCreateJob(v, request)
+	s.validateCreateJob(v, request)
 	if !v.Valid() {
 		return nil, &validator.ValidationError{Errors: v.Errors}
 	}
@@ -65,16 +65,16 @@ func (js *JobService) CreateJob(ctx context.Context, request *job.CreateRequest)
 		RetryDelaySec: retryDelay,
 	}
 
-	err := js.store.Job().Save(ctx, &job)
+	err := s.store.Job().Save(ctx, &job)
 	if err != nil {
-		js.logger.Error("failed to store job", "id", job.ID, "err", err.Error())
+		s.logger.Error("failed to store job", "id", job.ID, "err", err.Error())
 		return nil, err
 	}
 
 	if job.RunAt != nil {
-		err = js.queue.Enqueue(ctx, job.ID, *job.RunAt)
+		err = s.queue.Enqueue(ctx, job.ID, *job.RunAt)
 		if err != nil {
-			js.logger.Error("failed to enqueue job", "jobID", job.ID)
+			s.logger.Error("failed to enqueue job", "jobID", job.ID)
 			return nil, err
 		}
 	}
@@ -82,14 +82,14 @@ func (js *JobService) CreateJob(ctx context.Context, request *job.CreateRequest)
 	return &job, nil
 }
 
-func (js *JobService) SearchJobs(ctx context.Context, criteria *job.SearchCriteria) ([]*job.Job, *pagination.Metadata, error) {
+func (s *JobService) SearchJobs(ctx context.Context, criteria *job.SearchCriteria) ([]*job.Job, *pagination.Metadata, error) {
 	v := validator.New()
-	js.validateSearchJobs(v, criteria)
+	s.validateSearchJobs(v, criteria)
 	if !v.Valid() {
 		return nil, nil, &validator.ValidationError{Errors: v.Errors}
 	}
 
-	jobs, metadata, err := js.store.Job().Search(ctx, criteria)
+	jobs, metadata, err := s.store.Job().Search(ctx, criteria)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -97,8 +97,8 @@ func (js *JobService) SearchJobs(ctx context.Context, criteria *job.SearchCriter
 	return jobs, metadata, nil
 }
 
-func (js *JobService) GetJob(ctx context.Context, jobId string) (*job.Job, error) {
-	j, err := js.store.Job().Get(ctx, jobId)
+func (s *JobService) GetJob(ctx context.Context, jobId string) (*job.Job, error) {
+	j, err := s.store.Job().Get(ctx, jobId)
 	if err != nil {
 		if errors.Is(err, store.ErrRecordNotFound) {
 			return nil, ErrRecordNotFound
@@ -109,8 +109,8 @@ func (js *JobService) GetJob(ctx context.Context, jobId string) (*job.Job, error
 	return j, nil
 }
 
-func (js *JobService) ScheduleJob(ctx context.Context, jobId string, runAt time.Time) error {
-	j, err := js.store.Job().Get(ctx, jobId)
+func (s *JobService) ScheduleJob(ctx context.Context, jobId string, runAt time.Time) error {
+	j, err := s.store.Job().Get(ctx, jobId)
 	if err != nil {
 		if errors.Is(err, store.ErrRecordNotFound) {
 			return ErrRecordNotFound
@@ -125,12 +125,12 @@ func (js *JobService) ScheduleJob(ctx context.Context, jobId string, runAt time.
 	j.RunAt = &runAt
 	j.Status = job.StatusQueued
 
-	err = js.store.Job().Update(ctx, j)
+	err = s.store.Job().Update(ctx, j)
 	if err != nil {
 		return err
 	}
 
-	err = js.queue.Enqueue(ctx, j.ID, *j.RunAt)
+	err = s.queue.Enqueue(ctx, j.ID, *j.RunAt)
 	if err != nil {
 		return err
 	}
@@ -138,8 +138,8 @@ func (js *JobService) ScheduleJob(ctx context.Context, jobId string, runAt time.
 	return nil
 }
 
-func (js *JobService) UpdateJobFields(ctx context.Context, jobId string, fields *job.UpdateFields) error {
-	j, err := js.store.Job().Get(ctx, jobId)
+func (s *JobService) UpdateJobFields(ctx context.Context, jobId string, fields *job.UpdateFields) error {
+	j, err := s.store.Job().Get(ctx, jobId)
 	if err != nil {
 		if errors.Is(err, store.ErrRecordNotFound) {
 			return ErrRecordNotFound
@@ -164,12 +164,12 @@ func (js *JobService) UpdateJobFields(ctx context.Context, jobId string, fields 
 		j.LastError = fields.LastError
 	}
 
-	return js.store.Job().Update(ctx, j)
+	return s.store.Job().Update(ctx, j)
 
 }
 
-func (js *JobService) UpdateJobStatus(ctx context.Context, jobId string, newStatus job.Status) error {
-	j, err := js.store.Job().Get(ctx, jobId)
+func (s *JobService) UpdateJobStatus(ctx context.Context, jobId string, newStatus job.Status) error {
+	j, err := s.store.Job().Get(ctx, jobId)
 	if err != nil {
 		if errors.Is(err, store.ErrRecordNotFound) {
 			return ErrRecordNotFound
@@ -182,10 +182,10 @@ func (js *JobService) UpdateJobStatus(ctx context.Context, jobId string, newStat
 	}
 
 	j.Status = newStatus
-	return js.store.Job().Update(ctx, j)
+	return s.store.Job().Update(ctx, j)
 }
 
-func (js *JobService) validateSearchJobs(v *validator.Validator, criteria *job.SearchCriteria) {
+func (s *JobService) validateSearchJobs(v *validator.Validator, criteria *job.SearchCriteria) {
 	if criteria.Task != "" {
 		v.Check(slices.Contains(task.Tasks, criteria.Task), "task", "unsupported task")
 	}
@@ -196,7 +196,7 @@ func (js *JobService) validateSearchJobs(v *validator.Validator, criteria *job.S
 
 }
 
-func (js *JobService) validateCreateJob(v *validator.Validator, request *job.CreateRequest) {
+func (s *JobService) validateCreateJob(v *validator.Validator, request *job.CreateRequest) {
 	v.CheckRequired(request.Task != "", "task")
 	v.Check(slices.Contains(task.Tasks, request.Task), "task", "unsupported task")
 	v.CheckRequired(len(request.Payload) > 0, "payload")

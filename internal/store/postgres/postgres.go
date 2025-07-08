@@ -36,6 +36,10 @@ func (s *PostgresStore) Token() store.TokenStore {
 	return newPostgresTokenStore(s)
 }
 
+func (s *PostgresStore) APIKey() store.APIKeyStore {
+	return newPostgresAPIKeyStore(s)
+}
+
 func New(cfg *PostgresConfig, logger *slog.Logger) *PostgresStore {
 	store := &PostgresStore{}
 

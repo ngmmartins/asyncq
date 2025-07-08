@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"log/slog"
 
@@ -19,14 +20,14 @@ func NewTokenService(logger *slog.Logger, store store.Store) *TokenService {
 	return &TokenService{logger: logger, store: store}
 }
 
-func (ts *TokenService) CreateAuthenticationToken(ctx context.Context, request *token.AuthenticationRequest) (*token.Token, error) {
+func (s *TokenService) CreateAuthenticationToken(ctx context.Context, request *token.AuthenticationRequest) (*token.Token, error) {
 	v := validator.New()
-	ts.validateCreateAuthenticationToken(v, request)
+	s.validateCreateAuthenticationToken(v, request)
 	if !v.Valid() {
 		return nil, &validator.ValidationError{Errors: v.Errors}
 	}
 
-	acc, err := ts.store.Account().GetByEmail(ctx, request.Email)
+	acc, err := s.store.Account().GetByEmail(ctx, request.Email)
 	if err != nil {
 		if errors.Is(err, store.ErrRecordNotFound) {
 			return nil, ErrRecordNotFound
@@ -48,16 +49,22 @@ func (ts *TokenService) CreateAuthenticationToken(ctx context.Context, request *
 
 	t := token.New(acc.ID, token.AuthenticationTokenDuration, token.ScopeAuthentication)
 
-	err = ts.store.Token().Save(ctx, t)
+	err = s.store.Token().Save(ctx, t)
 	if err != nil {
-		ts.logger.Error("failed to store token", "err", err.Error())
+		s.logger.Error("failed to store token", "err", err.Error())
 		return nil, err
 	}
 
 	return t, nil
 }
 
-func (ts *TokenService) validateCreateAuthenticationToken(v *validator.Validator, request *token.AuthenticationRequest) {
+func (s *TokenService) DeleteToken(ctx context.Context, plaintext string) error {
+	hash := sha256.Sum256([]byte(plaintext))
+
+	return s.store.Token().Delete(ctx, hash[:])
+}
+
+func (s *TokenService) validateCreateAuthenticationToken(v *validator.Validator, request *token.AuthenticationRequest) {
 	v.CheckRequired(request.Email != "", "email")
 	v.CheckRequired(request.Password != "", "password")
 }

@@ -1,9 +1,108 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
+	"strings"
+
+	"github.com/ngmmartins/asyncq/internal/service"
+	"github.com/ngmmartins/asyncq/internal/token"
+	"github.com/ngmmartins/asyncq/internal/util"
 )
+
+func (app *application) requireAuthenticatedAccount(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authorizationHeader := r.Header.Get("Authorization")
+
+		if authorizationHeader == "" {
+			app.authenticationRequiredResponse(w, r)
+			return
+		}
+
+		headerParts := strings.Split(authorizationHeader, " ")
+		if len(headerParts) != 2 || headerParts[0] != "Bearer" || headerParts[1] == "" {
+			app.invalidAuthenticationTokenResponse(w, r)
+			return
+		}
+
+		plaintext := headerParts[1]
+
+		acc, err := app.accountService.GetForToken(r.Context(), plaintext, token.ScopeAuthentication)
+		if err != nil {
+			switch {
+			case errors.Is(err, service.ErrRecordNotFound):
+				app.invalidAuthenticationTokenResponse(w, r)
+			default:
+				app.serverErrorResponse(w, r, err)
+			}
+			return
+		}
+
+		err = app.tokenService.DeleteToken(r.Context(), plaintext)
+		if err != nil {
+			app.serverErrorResponse(w, r, err)
+			return
+		}
+
+		ctx := util.ContextSetAccount(r.Context(), acc)
+
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func (app *application) requireAPIKey(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authorizationHeader := r.Header.Get("Authorization")
+
+		if authorizationHeader == "" {
+			app.apiKeyRequiredResponse(w, r)
+			return
+		}
+
+		headerParts := strings.Split(authorizationHeader, " ")
+		if len(headerParts) != 2 || headerParts[0] != "Bearer" || headerParts[1] == "" {
+			app.invalidAPIKeyResponse(w, r)
+			return
+		}
+
+		plaintext := headerParts[1]
+
+		apiKey, err := app.apiKeyService.GetValidAPIKey(r.Context(), plaintext)
+		if err != nil {
+			if errors.Is(err, service.ErrRecordNotFound) {
+				app.invalidAPIKeyResponse(w, r)
+				return
+			}
+			app.serverErrorResponse(w, r, err)
+			return
+		}
+
+		acc, err := app.accountService.GetAccount(r.Context(), apiKey.AccountID)
+		if err != nil {
+			// this should not happen because we were able to get the API Key before
+			app.serverErrorResponse(w, r, err)
+			return
+		}
+
+		ctx := util.ContextSetAccount(r.Context(), acc)
+
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func (app *application) requireActivatedAccount(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		acc := util.ContextGetAccount(r.Context())
+
+		if !acc.Activated {
+			app.inactiveAccountResponse(w, r)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
 
 func (app *application) recoverPanic(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
