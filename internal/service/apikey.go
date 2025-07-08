@@ -59,3 +59,7 @@ func (s *APIKeyService) GetValidAPIKey(ctx context.Context, plaintext string) (*
 
 	return apiKey, nil
 }
+
+func (s *APIKeyService) GetAPIKeys(ctx context.Context, accountId string) ([]*apikey.APIKey, error) {
+	return s.store.APIKey().GetByAccountId(ctx, accountId)
+}

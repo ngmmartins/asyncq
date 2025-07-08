@@ -39,12 +39,6 @@ func (app *application) requireAuthenticatedAccount(next http.Handler) http.Hand
 			return
 		}
 
-		err = app.tokenService.DeleteToken(r.Context(), plaintext)
-		if err != nil {
-			app.serverErrorResponse(w, r, err)
-			return
-		}
-
 		ctx := util.ContextSetAccount(r.Context(), acc)
 
 		next.ServeHTTP(w, r.WithContext(ctx))

@@ -7,9 +7,13 @@ meta {
 get {
   url: {{host}}/v1/jobs/:jobId
   body: none
-  auth: inherit
+  auth: bearer
 }
 
 params:path {
   jobId: bb620be3-4f70-431d-8395-e3cbeb4d52ac
+}
+
+auth:bearer {
+  token: OY2OBVILLHLGR7OBG6VXPQTQY2
 }

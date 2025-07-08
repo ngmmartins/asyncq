@@ -14,7 +14,7 @@
 ---
 
 ## 2. Security & Access Control
-- [ ] API key or token-based authentication (per user/account/team)
+- [x] API key or token-based authentication (per user/account/team)
 - [ ] Enforce rate limits and quota (basic tier, fair usage)
 - [ ] Isolate job data between clients (multi-tenant ready or scoped access)
 

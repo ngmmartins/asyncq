@@ -48,6 +48,48 @@ func (s *PostgresAPIKeyStore) Save(ctx context.Context, key *apikey.APIKey) erro
 	return nil
 }
 
+func (s *PostgresAPIKeyStore) GetByAccountId(ctx context.Context, accountId string) ([]*apikey.APIKey, error) {
+	query := `SELECT id, hash, account_id, name, expires_at, created_at
+	FROM api_keys
+	WHERE account_id = $1`
+
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	rows, err := s.db.QueryContext(ctx, query, accountId)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	apiKeys := []*apikey.APIKey{}
+
+	for rows.Next() {
+		var apiKey apikey.APIKey
+
+		err := rows.Scan(
+			&apiKey.ID,
+			&apiKey.Hash,
+			&apiKey.AccountID,
+			&apiKey.Name,
+			&apiKey.ExpiresAt,
+			&apiKey.CreatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		apiKeys = append(apiKeys, &apiKey)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return apiKeys, nil
+}
+
 func (s *PostgresAPIKeyStore) GetByHash(ctx context.Context, hash []byte, now time.Time) (*apikey.APIKey, error) {
 	query := `SELECT id, hash, account_id, name, expires_at, created_at
 	FROM api_keys

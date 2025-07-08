@@ -36,3 +36,18 @@ func (app *application) createAPIKeyHandler(w http.ResponseWriter, r *http.Reque
 		app.serverErrorResponse(w, r, err)
 	}
 }
+
+func (app *application) getAPIKeysHandler(w http.ResponseWriter, r *http.Request) {
+	acc := util.ContextGetAccount(r.Context())
+
+	apiKeys, err := app.apiKeyService.GetAPIKeys(r.Context(), acc.ID)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"apiKeys": apiKeys}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}

@@ -11,9 +11,9 @@ import (
 type APIKey struct {
 	ID        string     `json:"id"`
 	Hash      []byte     `json:"-"`
-	AccountID string     `json:"-"`
+	AccountID string     `json:"account_id"`
 	Name      string     `json:"name"`
-	Key       string     `json:"key"`
+	Key       string     `json:"key,omitempty"`
 	ExpiresAt *time.Time `json:"expires_at,omitempty"` // Allow for keys that don't expire
 	CreatedAt time.Time  `json:"created_at"`
 }

@@ -18,16 +18,23 @@ func (app *application) routes() http.Handler {
 
 	// Protected routes - authentication required
 	router.Handler(http.MethodPost, "/v1/api-keys", app.requireAuthenticatedAccount(
-		app.requireActivatedAccount(http.HandlerFunc(app.createAPIKeyHandler)),
-	))
+		app.requireActivatedAccount(http.HandlerFunc(app.createAPIKeyHandler))))
+	router.Handler(http.MethodGet, "/v1/api-keys", app.requireAuthenticatedAccount(
+		app.requireActivatedAccount(http.HandlerFunc(app.getAPIKeysHandler))))
 
 	// Protected routes - API-Key required
-	router.Handler(http.MethodPost, "/v1/jobs", app.requireAPIKey(app.requireActivatedAccount(http.HandlerFunc(app.createJobHandler))))
-	router.Handler(http.MethodGet, "/v1/jobs", app.requireAPIKey(app.requireActivatedAccount(http.HandlerFunc(app.searchJobsHandler))))
-	router.Handler(http.MethodGet, "/v1/jobs/:id", app.requireAPIKey(app.requireActivatedAccount(http.HandlerFunc(app.getJobHandler))))
-	router.Handler(http.MethodPost, "/v1/jobs/:id/schedule", app.requireAPIKey(app.requireActivatedAccount(http.HandlerFunc(app.scheduleJobHandler))))
-	router.Handler(http.MethodGet, "/v1/jobs/:id/status", app.requireAPIKey(app.requireActivatedAccount(http.HandlerFunc(app.getJobStatusHandler))))
-	router.Handler(http.MethodPost, "/v1/jobs/:id/cancel", app.requireAPIKey(app.requireActivatedAccount(http.HandlerFunc(app.cancelJobHandler))))
+	router.Handler(http.MethodPost, "/v1/jobs", app.requireAPIKey(
+		app.requireActivatedAccount(http.HandlerFunc(app.createJobHandler))))
+	router.Handler(http.MethodGet, "/v1/jobs", app.requireAPIKey(
+		app.requireActivatedAccount(http.HandlerFunc(app.searchJobsHandler))))
+	router.Handler(http.MethodGet, "/v1/jobs/:id", app.requireAPIKey(
+		app.requireActivatedAccount(http.HandlerFunc(app.getJobHandler))))
+	router.Handler(http.MethodPost, "/v1/jobs/:id/schedule", app.requireAPIKey(
+		app.requireActivatedAccount(http.HandlerFunc(app.scheduleJobHandler))))
+	router.Handler(http.MethodGet, "/v1/jobs/:id/status", app.requireAPIKey(
+		app.requireActivatedAccount(http.HandlerFunc(app.getJobStatusHandler))))
+	router.Handler(http.MethodPost, "/v1/jobs/:id/cancel", app.requireAPIKey(
+		app.requireActivatedAccount(http.HandlerFunc(app.cancelJobHandler))))
 
 	return app.recoverPanic(app.enableCORS(router))
 }
