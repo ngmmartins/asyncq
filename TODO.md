@@ -1,7 +1,6 @@
 - TASKS
     - send_mail
-        - suppport multiple "To"s on send_email
-        - support CC and BCC on send_email
+        - BCC needs to be tested on other platform because mailtrap doesn't support it on it's free plan
         - Evaluate sending attachments on send_email
         - email templates
         - plaintext/html support

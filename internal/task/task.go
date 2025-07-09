@@ -30,15 +30,18 @@ func ValidateWebhookPayload(v *validator.Validator, p *WebhookPayload) {
 }
 
 type SendEmailPayload struct {
-	From    string `json:"from"`
-	To      string `json:"to"`
-	Subject string `json:"subject"`
-	Body    string `json:"body"`
+	From    string   `json:"from"`
+	To      []string `json:"to"`
+	Cc      []string `json:"cc,omitempty"`
+	Bcc     []string `json:"bcc,omitempty"`
+	Subject string   `json:"subject"`
+	Body    string   `json:"body"`
 }
 
 func ValidateSendEmailPayload(v *validator.Validator, p *SendEmailPayload) {
 	v.CheckRequired(p.From != "", "payload.from")
-	v.CheckRequired(p.To != "", "payload.to")
+	v.CheckRequired(len(p.To) > 0, "payload.to")
 	v.CheckRequired(p.Subject != "", "payload.subject")
 	// TODO other checks
+	// TODO validate emails here (to, cc, bcc)
 }

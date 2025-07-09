@@ -7,7 +7,11 @@ meta {
 post {
   url: {{host}}/v1/jobs
   body: json
-  auth: inherit
+  auth: bearer
+}
+
+auth:bearer {
+  token: ak_2RVH52Y4NSIIUZAB5GSY6IPNGT
 }
 
 body:json {
@@ -15,11 +19,13 @@ body:json {
     "task": "send_email",
     "payload": {
       "from": "info@example.com",
-      "to": "user@example.com",
+      "to": ["user1", "user2@example.com"],
+      "cc": ["cc1@example.com", "cc2"],
+      "bcc": ["bcc1@example.com", "bcc2@example.com"],
       "subject": "Welcome!",
       "body": "Hello!"
     },
-    "run_at": "2025-07-02T10:37:00.000+01:00",
+    "run_at": "2025-07-09T10:19:00.000+01:00",
     "max_retries": 3,
     "retry_delay_sec": 30
   }

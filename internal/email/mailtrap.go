@@ -40,17 +40,35 @@ func NewMailtrapSender(logger *slog.Logger, host string, port int, username, pas
 	return ms
 }
 
-func (s *MailtrapSender) Send(ctx context.Context, to, from, subject, body string) error {
+func (s *MailtrapSender) Send(ctx context.Context, to, cc, bcc []string, from, subject, body string) error {
 	msg := mail.NewMsg()
+	var allErrors []error
 
 	err := msg.From(from)
 	if err != nil {
-		return fmt.Errorf("%w: %s", ErrInvalidEmailAddress, from)
+		allErrors = append(allErrors, fmt.Errorf("%w: %s", ErrInvalidEmailAddress, from))
 	}
-	err = msg.To(to)
+	err = msg.To(to...)
 	if err != nil {
-		return fmt.Errorf("%w: %s", ErrInvalidEmailAddress, to)
+		allErrors = append(allErrors, fmt.Errorf("%w: %s", ErrInvalidEmailAddress, to))
 	}
+	if len(cc) > 0 {
+		err = msg.Cc(cc...)
+		if err != nil {
+			allErrors = append(allErrors, fmt.Errorf("%w: %s", ErrInvalidEmailAddress, cc))
+		}
+	}
+	if len(bcc) > 0 {
+		err = msg.Bcc(bcc...)
+		if err != nil {
+			allErrors = append(allErrors, fmt.Errorf("%w: %s", ErrInvalidEmailAddress, bcc))
+		}
+	}
+
+	if len(allErrors) > 0 {
+		return errors.Join(allErrors...)
+	}
+
 	msg.Subject(subject)
 	msg.SetBodyString(mail.TypeTextPlain, body)
 

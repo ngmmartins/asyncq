@@ -30,6 +30,8 @@ func (e *SendEmailExecutor) Execute(j job.Job) error {
 	return e.emailSender.Send(
 		context.Background(),
 		payload.To,
+		payload.Cc,
+		payload.Bcc,
 		payload.From,
 		payload.Subject,
 		payload.Body,
