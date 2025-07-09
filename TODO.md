@@ -26,7 +26,7 @@
         - n jobs by status
         - avg time to run, failures, retries
 - AUTHENTICATION
-    - implement DELETE /v1/api-keys/:id	to delete/revoke a key
     - implement PATCH /v1/api-keys/:id	to update name or something else?? check if makes sense
     - consider having a backgroud goroutine to clean expired tokens
+    - check if tokens and api keys generation meet "standard" security requirements
 - check /TODOs

@@ -45,6 +45,8 @@ type TokenStore interface {
 
 type APIKeyStore interface {
 	Save(ctx context.Context, key *apikey.APIKey) error
+	Get(ctx context.Context, id, accountId string) (*apikey.APIKey, error)
 	GetByHash(ctx context.Context, hash []byte, now time.Time) (*apikey.APIKey, error)
 	GetByAccountId(ctx context.Context, accountId string) ([]*apikey.APIKey, error)
+	Delete(ctx context.Context, id, accountId string) error
 }

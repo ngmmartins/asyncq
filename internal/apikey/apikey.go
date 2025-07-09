@@ -3,10 +3,13 @@ package apikey
 import (
 	"crypto/rand"
 	"crypto/sha256"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 )
+
+const apiKeyPrefix = "ak_"
 
 type APIKey struct {
 	ID        string     `json:"id"`
@@ -19,7 +22,7 @@ type APIKey struct {
 }
 
 func New(accountId string, name string, expiresAt *time.Time) *APIKey {
-	plaintext := rand.Text()
+	plaintext := fmt.Sprintf("%s%s", apiKeyPrefix, rand.Text())
 	hash := sha256.Sum256([]byte(plaintext))
 
 	now := time.Now()

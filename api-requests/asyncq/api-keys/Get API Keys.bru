@@ -1,21 +1,15 @@
 meta {
   name: Get API Keys
   type: http
-  seq: 4
+  seq: 2
 }
 
-post {
+get {
   url: {{host}}/v1/api-keys
   body: json
   auth: bearer
 }
 
 auth:bearer {
-  token: LMMRH2MIVSSMKNZMSXX2HBFWXW
-}
-
-body:json {
-  {
-    "Name": "Test Key 2"
-  }
+  token: WCQOJZOVTLU3VUSNNSJP4A2T7S
 }

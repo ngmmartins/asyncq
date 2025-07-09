@@ -21,6 +21,10 @@ func (app *application) routes() http.Handler {
 		app.requireActivatedAccount(http.HandlerFunc(app.createAPIKeyHandler))))
 	router.Handler(http.MethodGet, "/v1/api-keys", app.requireAuthenticatedAccount(
 		app.requireActivatedAccount(http.HandlerFunc(app.getAPIKeysHandler))))
+	router.Handler(http.MethodGet, "/v1/api-keys/:id", app.requireAuthenticatedAccount(
+		app.requireActivatedAccount(http.HandlerFunc(app.getAPIKeyHandler))))
+	router.Handler(http.MethodDelete, "/v1/api-keys/:id", app.requireAuthenticatedAccount(
+		app.requireActivatedAccount(http.HandlerFunc(app.deleteAPIKeyHandler))))
 
 	// Protected routes - API-Key required
 	router.Handler(http.MethodPost, "/v1/jobs", app.requireAPIKey(

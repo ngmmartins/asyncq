@@ -9,6 +9,7 @@ import (
 
 	"github.com/ngmmartins/asyncq/internal/apikey"
 	"github.com/ngmmartins/asyncq/internal/store"
+	"github.com/ngmmartins/asyncq/internal/validator"
 )
 
 type APIKeyService struct {
@@ -21,6 +22,12 @@ func NewAPIKeyService(logger *slog.Logger, store store.Store) *APIKeyService {
 }
 
 func (s *APIKeyService) CreateAPIKey(ctx context.Context, accountId string, request *apikey.CreateRequest) (*apikey.APIKey, error) {
+	v := validator.New()
+	s.validateCreateAPIKey(v, request)
+	if !v.Valid() {
+		return nil, &validator.ValidationError{Errors: v.Errors}
+	}
+
 	acc, err := s.store.Account().Get(ctx, accountId)
 	if err != nil {
 		if errors.Is(err, store.ErrRecordNotFound) {
@@ -62,4 +69,33 @@ func (s *APIKeyService) GetValidAPIKey(ctx context.Context, plaintext string) (*
 
 func (s *APIKeyService) GetAPIKeys(ctx context.Context, accountId string) ([]*apikey.APIKey, error) {
 	return s.store.APIKey().GetByAccountId(ctx, accountId)
+}
+
+func (s *APIKeyService) GetAPIKey(ctx context.Context, id, accountId string) (*apikey.APIKey, error) {
+	apiKey, err := s.store.APIKey().Get(ctx, id, accountId)
+	if err != nil {
+		if errors.Is(err, store.ErrNoRowsAffected) {
+			return nil, ErrRecordNotFound
+		}
+		return nil, err
+	}
+
+	return apiKey, nil
+}
+
+func (s *APIKeyService) DeleteAPIKey(ctx context.Context, id string, accountId string) error {
+	err := s.store.APIKey().Delete(ctx, id, accountId)
+	if err != nil {
+		if errors.Is(err, store.ErrNoRowsAffected) {
+			return ErrRecordNotFound
+		}
+		return err
+	}
+
+	return nil
+}
+
+func (s *APIKeyService) validateCreateAPIKey(v *validator.Validator, request *apikey.CreateRequest) {
+	v.CheckRequired(request.Name != "", "name")
+	v.Check(request.ExpiresAt == nil || request.ExpiresAt.After(time.Now()), "expires_at", "must be in the future")
 }

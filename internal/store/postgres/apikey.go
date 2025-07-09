@@ -123,3 +123,64 @@ func (s *PostgresAPIKeyStore) GetByHash(ctx context.Context, hash []byte, now ti
 
 	return &apiKey, nil
 }
+
+func (s *PostgresAPIKeyStore) Get(ctx context.Context, id, accountId string) (*apikey.APIKey, error) {
+	query := `SELECT id, hash, account_id, name, expires_at, created_at
+	FROM api_keys
+	WHERE id = $1
+	AND account_id = $2`
+
+	args := []any{id, accountId}
+
+	var apiKey apikey.APIKey
+
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	err := s.db.QueryRowContext(ctx, query, args...).Scan(
+		&apiKey.ID,
+		&apiKey.Hash,
+		&apiKey.AccountID,
+		&apiKey.Name,
+		&apiKey.ExpiresAt,
+		&apiKey.CreatedAt,
+	)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, store.ErrRecordNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	return &apiKey, nil
+}
+
+func (s *PostgresAPIKeyStore) Delete(ctx context.Context, id, accountId string) error {
+	query := `DELETE FROM api_keys
+	WHERE id = $1
+	AND account_id = $2`
+
+	args := []any{id, accountId}
+
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	result, err := s.db.ExecContext(ctx, query, args...)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected != 1 {
+		return store.ErrNoRowsAffected
+	}
+
+	return nil
+}

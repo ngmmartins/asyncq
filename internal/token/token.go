@@ -3,10 +3,13 @@ package token
 import (
 	"crypto/rand"
 	"crypto/sha256"
+	"fmt"
 	"time"
 )
 
 type Scope string
+
+const tokenPrefix = "tk_"
 
 const (
 	ScopeAuthentication Scope = "authentication"
@@ -24,7 +27,7 @@ type Token struct {
 
 func New(accountId string, ttl time.Duration, scope Scope) *Token {
 	token := &Token{
-		Plaintext: rand.Text(),
+		Plaintext: fmt.Sprintf("%s%s", tokenPrefix, rand.Text()),
 		AccountID: accountId,
 		ExpiresAt: time.Now().Add(ttl),
 		Scope:     scope,

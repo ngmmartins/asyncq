@@ -1,0 +1,19 @@
+meta {
+  name: Get API Key
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{host}}/v1/api-keys/:id
+  body: json
+  auth: bearer
+}
+
+params:path {
+  id: 1a317c65-0129-4cec-a928-1aebd1654726
+}
+
+auth:bearer {
+  token: MPL646G7BZ4M6TQ5TJWWYEHP65
+}

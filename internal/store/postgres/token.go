@@ -50,6 +50,9 @@ func (s *PostgresTokenStore) Delete(ctx context.Context, hash []byte) error {
 	query := `DELETE FROM tokens
 	WHERE hash = $1`
 
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
 	result, err := s.db.ExecContext(ctx, query, hash)
 	if err != nil {
 		return err

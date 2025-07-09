@@ -129,6 +129,11 @@ func (app *application) scheduleJobHandler(w http.ResponseWriter, r *http.Reques
 		}
 		return
 	}
+
+	err = app.writeJSON(w, http.StatusNoContent, nil, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
 }
 
 func (app *application) cancelJobHandler(w http.ResponseWriter, r *http.Request) {
@@ -151,6 +156,11 @@ func (app *application) cancelJobHandler(w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
+	}
+
+	err = app.writeJSON(w, http.StatusNoContent, nil, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
 	}
 }
 
