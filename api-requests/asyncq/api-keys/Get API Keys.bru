@@ -7,9 +7,9 @@ meta {
 get {
   url: {{host}}/v1/api-keys
   body: json
-  auth: bearer
+  auth: inherit
 }
 
-auth:bearer {
-  token: MPL646G7BZ4M6TQ5TJWWYEHP65
+script:pre-request {
+  req.setHeader("Authorization", "Bearer " + bru.getEnvVar("token"))
 }

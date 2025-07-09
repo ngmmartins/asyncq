@@ -7,11 +7,7 @@ meta {
 post {
   url: {{host}}/v1/jobs
   body: json
-  auth: bearer
-}
-
-auth:bearer {
-  token: ak_2RVH52Y4NSIIUZAB5GSY6IPNGT
+  auth: inherit
 }
 
 body:json {
@@ -29,4 +25,8 @@ body:json {
     "max_retries": 3,
     "retry_delay_sec": 30
   }
+}
+
+script:pre-request {
+  req.setHeader("Authorization", "Bearer " + bru.getEnvVar("api_key"))
 }

@@ -7,13 +7,13 @@ meta {
 get {
   url: {{host}}/v1/jobs/:jobId
   body: none
-  auth: bearer
+  auth: inherit
 }
 
 params:path {
   jobId: fe6965b8-0848-4bd8-97a2-bb2123d9b8d7
 }
 
-auth:bearer {
-  token: ak_WSGYRE2P7CF3LWI2W2XU6QEBIG
+script:pre-request {
+  req.setHeader("Authorization", "Bearer " + bru.getEnvVar("api_key"))
 }

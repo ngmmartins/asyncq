@@ -9,6 +9,10 @@
     - add job database indexs
     - endpoint to manually retry a job (if failed)
     - handle case where creating a job on db succeeds but enqueue on redis fails
+        - potential option:
+            - if the enqueue fails, return a http code that represents a pending state (202 Accepted??)
+            - have a mechanism that picks jobs from db that have status queued and runAt date but are not present in redis
+            - try to enqueue this jobs a few times. if still fails, update db job with error.
     - recurring jobs
 - TECH DEBT
     - Check errors overall - if they are correctly logged and handled/returned in the right places

@@ -40,5 +40,5 @@ func (app *application) routes() http.Handler {
 	router.Handler(http.MethodPost, "/v1/jobs/:id/cancel", app.requireAPIKey(
 		app.requireActivatedAccount(http.HandlerFunc(app.cancelJobHandler))))
 
-	return app.recoverPanic(app.enableCORS(router))
+	return app.recoverPanic(app.enableCORS(app.logRequest(router)))
 }

@@ -13,3 +13,7 @@ get {
 params:path {
   jobId: 949de8f1-492c-4041-a1b6-84cec7cd70f8
 }
+
+script:pre-request {
+  req.setHeader("Authorization", "Bearer " + bru.getEnvVar("api_key"))
+}

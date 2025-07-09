@@ -7,13 +7,13 @@ meta {
 delete {
   url: {{host}}/v1/api-keys/:id
   body: json
-  auth: bearer
+  auth: inherit
 }
 
 params:path {
   id: f5312c20-62e2-4c28-bae3-ac9afe09fddf
 }
 
-auth:bearer {
-  token: WCQOJZOVTLU3VUSNNSJP4A2T7S
+script:pre-request {
+  req.setHeader("Authorization", "Bearer " + bru.getEnvVar("token"))
 }

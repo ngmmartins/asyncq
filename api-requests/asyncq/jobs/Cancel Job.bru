@@ -13,3 +13,7 @@ post {
 params:path {
   jobId: f9e67ec2-8486-41d1-b048-7dd20155dd96
 }
+
+script:pre-request {
+  req.setHeader("Authorization", "Bearer " + bru.getEnvVar("api_key"))
+}

@@ -16,3 +16,9 @@ body:json {
     "password": "changeme"
   }
 }
+
+script:post-response {
+  if (res.status == 201) {
+    bru.setEnvVar("token",res.body.token.token) 
+  }
+}

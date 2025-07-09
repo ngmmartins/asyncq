@@ -7,16 +7,22 @@ meta {
 post {
   url: {{host}}/v1/api-keys
   body: json
-  auth: bearer
-}
-
-auth:bearer {
-  token: tk_252GQ3ZOY5ROZ464G3WQEDW3ZA
+  auth: inherit
 }
 
 body:json {
   {
     "name": "Test Key 2",
     "expires_at": "2026-07-08T22:41:26.055188+01:00"
+  }
+}
+
+script:pre-request {
+  req.setHeader("Authorization", "Bearer " + bru.getEnvVar("token"))
+}
+
+script:post-response {
+  if (res.status == 201) {
+    bru.setEnvVar("api_key",res.body.apiKey.key) 
   }
 }
